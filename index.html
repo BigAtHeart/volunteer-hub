@@ -25,7 +25,7 @@ label{font-size:12px;color:var(--mu);display:block}.full{grid-column:1/-1}.bar{h
 table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:6px;border-top:1px solid var(--bd)}.ov{overflow-x:auto}
 </style></head><body><div class="w" id="app">Loading…</div>
 <script>
-const UIV=6;
+const UIV=7;
 let tabSet=0;
 let B={org:'Big At Heart',logo:''},S=null,tab='opps',tok='',em='',step=0,err='';
 try{tok=localStorage.getItem('vh_t')||''}catch(e){}
@@ -61,7 +61,7 @@ function render(){
   const T=[['opps','Opportunities'],['my','My activity'],['profile','My profile']].concat(S.admin?[['manage','Manage & attendance'],['dash','Dashboard']]:[]);
   if(!T.some(t=>t[0]===tab))tab='opps';
   $('#app').innerHTML=`<header><div><h1>${logo(32)} Big At Heart Volunteer Hub</h1><div class="mu">${esc(S.email)} · ${S.admin?'Admin':'Volunteer'}</div></div><button data-a="out">Sign out</button></header>
-  ${S.needs?`<div class="al">⚠️ Please complete the missing details in your profile (emergency contact, and parent details if you are under 21) before signing up for opportunities.</div>`:''}<div class="tabs">${T.map(t=>`<button class="${tab===t[0]?'on':''}" data-a="tab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>${{opps:vOpps,my:vMy,profile:vProfile,manage:vManage,dash:vDash}[tab]()}<div class="mu" style="margin:18px 0 6px;text-align:center">Big At Heart Volunteer Hub · page v${UIV} · server v${S.ver||'old'}</div>`;
+  ${S.needs?`<div class="al">⚠️ Please complete the missing details in your profile (your WhatsApp number, emergency contact, and parent details if you are under 21) before signing up for opportunities.</div>`:''}<div class="tabs">${T.map(t=>`<button class="${tab===t[0]?'on':''}" data-a="tab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>${{opps:vOpps,my:vMy,profile:vProfile,manage:vManage,dash:vDash}[tab]()}<div class="mu" style="margin:18px 0 6px;text-align:center">Big At Heart Volunteer Hub · page v${UIV} · server v${S.ver||'old'}</div>`;
 }
 const ageOn=(d,t)=>{let a=+t.slice(0,4)-+d.slice(0,4);if(t.slice(5)<d.slice(5))a--;return a};
 const isMinorDob=d=>/^\d{4}-\d{2}-\d{2}$/.test(d||'')&&ageOn(d,S.today)<21;
@@ -73,6 +73,7 @@ function pform(p,isNew){
   <div><label>Full name (cannot be changed)</label><input id="pf_name" value="${esc(p.name||'')}" ${lk}><div class="mu" style="font-size:12px">Enter exactly as you need on your volunteering certificate.</div></div>
   <div><label>Gender${cn}</label><select id="pf_gender" ${lk}><option value="">Select…</option>${o(L.genders,p.gender)}</select></div>
   <div><label>Date of birth${cn}</label><input id="pf_dob" type="date" max="${yday()}" value="${esc(p.dob||'')}" ${lk}></div>
+  <div><label>WhatsApp phone number</label><input id="pf_phone" type="tel" placeholder="e.g. +65 9123 4567" value="${esc(p.phone||'')}"></div>
   ${isNew?`<div class="full mu">Your name, gender and date of birth cannot be changed after sign-up, so please check them carefully.</div>`:''}
   <div class="full"><label>Address in Singapore (include the 6-digit postal code)</label><textarea id="pf_addr" rows="2">${esc(p.address||'')}</textarea></div>
   <div><label>Organisation type</label><select id="pf_type"><option value="">Select…</option>${o(L.orgTypes,p.orgType)}</select></div>
@@ -102,7 +103,7 @@ const waA=n=>{if(!n)return'';let d=String(n).replace(/\D/g,'');if(d.length===8)d
 function cInfo(email){
   const k=(S.contacts||{})[email];if(!k)return '<div class="mu" style="padding:0 0 6px">No contact details on file.</div>';
   return `<details style="margin:0 0 6px"><summary class="mu" style="cursor:pointer">Contact details${k.minor?' · <b>Under 21</b>':''}</summary><div class="mu" style="padding:4px 0 0 14px;line-height:1.7">
-  <b>Emergency:</b> ${esc(k.emerName||'–')} (${esc(k.emerRel||'–')}) · ${telA(k.emerPhone)}${waA(k.emerPhone)}${k.emerAlt?' · alt '+telA(k.emerAlt):''}
+  <b>Volunteer:</b> ${telA(k.phone)}${waA(k.phone)}<br><b>Emergency:</b> ${esc(k.emerName||'–')} (${esc(k.emerRel||'–')}) · ${telA(k.emerPhone)}${waA(k.emerPhone)}${k.emerAlt?' · alt '+telA(k.emerAlt):''}
   ${k.minor?`<br><b>Parent:</b> ${esc(k.parentName||'–')} · ${telA(k.parentPhone)}${waA(k.parentPhone)} · ${k.parentEmail?`<a href="mailto:${esc(k.parentEmail)}">${esc(k.parentEmail)}</a>`:'–'}${k.parentConsent==='yes'?' · permission confirmed':' · <b>permission not confirmed</b>'}`:''}</div></details>`;
 }
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -111,9 +112,9 @@ function cList(o){return sups().filter(s=>s.oppId===o.id&&s.status==='registered
 function cFile(o,ext){return (o.title.replace(/[\\\/:*?"<>|]+/g,'').trim()||'Event')+'_Contact_List_'+ddmmm(o.date)+'.'+ext}
 function cXlsx(o){
   if(!window.XLSX){alert('The Excel library could not load. Please check your connection and try again.');return}
-  const hd=['Name','Email','Role','Under 21','Emergency contact','Emergency relationship','Emergency WhatsApp','Emergency alternate phone','Parent name','Parent email','Parent WhatsApp','Parent permission confirmed'];
-  const rows=cList(o).map(({s,k})=>[s.name||'',s.email,roleOf(s).name,k.minor?'Yes':'No',k.emerName||'',k.emerRel||'',k.emerPhone||'',k.emerAlt||'',k.minor?k.parentName||'':'',k.minor?k.parentEmail||'':'',k.minor?k.parentPhone||'':'',k.minor?(k.parentConsent==='yes'?'Yes':'No'):'']);
-  const ws=XLSX.utils.aoa_to_sheet([hd].concat(rows));ws['!cols']=[26,30,18,9,22,20,20,22,22,28,18,14].map(w=>({wch:w}));
+  const hd=['Name','Email','Volunteer WhatsApp','Role','Under 21','Emergency contact','Emergency relationship','Emergency WhatsApp','Emergency alternate phone','Parent name','Parent email','Parent WhatsApp','Parent permission confirmed'];
+  const rows=cList(o).map(({s,k})=>[s.name||'',s.email,k.phone||'',roleOf(s).name,k.minor?'Yes':'No',k.emerName||'',k.emerRel||'',k.emerPhone||'',k.emerAlt||'',k.minor?k.parentName||'':'',k.minor?k.parentEmail||'':'',k.minor?k.parentPhone||'':'',k.minor?(k.parentConsent==='yes'?'Yes':'No'):'']);
+  const ws=XLSX.utils.aoa_to_sheet([hd].concat(rows));ws['!cols']=[26,30,20,18,9,22,20,20,22,22,28,18,14].map(w=>({wch:w}));
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Contact list');XLSX.writeFile(wb,cFile(o,'xlsx'));
 }
 async function cPdf(o){
@@ -126,7 +127,7 @@ async function cPdf(o){
     const s=l?l+' '+w:w;if(m.measureText(s).width>maxW&&l){out.push(l);l=w}else l=s});out.push(l)});return out};
   const items=L.map(({s,k},i)=>[
     [{t:String(i+1)}],
-    [{t:s.name||'Unnamed',b:1},{t:s.email,c:'#666',sz:19}].concat(k.minor?[{t:'Under 21',b:1,c:'#b3261e'}]:[]),
+    [{t:s.name||'Unnamed',b:1},{t:s.email,c:'#666',sz:19},{t:'WhatsApp: '+(k.phone||'\u2013'),sz:20}].concat(k.minor?[{t:'Under 21',b:1,c:'#b3261e'}]:[]),
     [{t:roleOf(s).name}],
     k.emerName?[{t:k.emerName+(k.emerRel?' ('+k.emerRel+')':''),b:1},{t:'WhatsApp: '+(k.emerPhone||'\u2013')}].concat(k.emerAlt?[{t:'Alt: '+k.emerAlt}]:[]):[{t:'No details on file',c:'#666'}],
     k.minor?[{t:k.parentName||'\u2013',b:1},{t:'WhatsApp: '+(k.parentPhone||'\u2013')},{t:k.parentEmail||'\u2013',sz:20},{t:k.parentConsent==='yes'?'Permission confirmed':'PERMISSION NOT CONFIRMED',b:1,c:k.parentConsent==='yes'?'#2e7d32':'#b3261e'}]:[{t:'\u2013',c:'#999'}],
@@ -249,7 +250,7 @@ async function onClick(e){
     if(!rs.length){$('#msg').textContent='Add at least one role with a name.';return}
     load('create',{o:{title:g('t'),date:g('d'),start:g('s'),end:g('e'),venue:g('v'),hours:g('h'),withdrawBy:g('w')||g('d'),skills:g('k'),desc:g('x'),roles:JSON.stringify(rs)}})}
   else if(a==='psave'){const isNew=b.dataset.n==='1',g=i=>document.getElementById(i).value.trim();
-    const p={name:g('pf_name'),gender:g('pf_gender'),dob:g('pf_dob'),address:g('pf_addr'),orgType:g('pf_type'),orgName:g('pf_org'),parentName:g('pf_pname'),parentEmail:g('pf_pemail'),parentPhone:g('pf_pphone'),parentConsent:document.getElementById('pf_pconsent').checked,emerName:g('pf_ename'),emerPhone:g('pf_ephone'),emerAlt:g('pf_ealt'),emerRel:g('pf_erel')};
+    const p={name:g('pf_name'),gender:g('pf_gender'),dob:g('pf_dob'),address:g('pf_addr'),orgType:g('pf_type'),orgName:g('pf_org'),parentName:g('pf_pname'),parentEmail:g('pf_pemail'),parentPhone:g('pf_pphone'),parentConsent:document.getElementById('pf_pconsent').checked,emerName:g('pf_ename'),emerPhone:g('pf_ephone'),emerAlt:g('pf_ealt'),emerRel:g('pf_erel'),phone:g('pf_phone')};
     const consent=isNew?document.getElementById('pf_consent').checked:undefined,before=S.profile&&S.profile.version;
     b.disabled=true;await load(isNew?'profileCreate':'profileUpdate',{p,consent});b.disabled=false;
     if(!isNew&&S.profile&&S.profile.version!==before)alert('Profile updated.')}
