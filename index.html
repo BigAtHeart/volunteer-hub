@@ -64,12 +64,13 @@ function pform(p,isNew){
   const L=S.lists,o=(a,v)=>a.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('');
   return `<div class="f">
   <div><label>Email (cannot be changed)</label><input value="${esc(S.email)}" disabled></div>
-  <div><label>Full name</label><input id="pf_name" value="${esc(p.name||'')}"></div>
-  <div><label>Gender</label><select id="pf_gender"><option value="">Select…</option>${o(L.genders,p.gender)}</select></div>
-  <div><label>Date of birth</label><input id="pf_dob" type="date" max="${S.today}" value="${esc(p.dob||'')}"></div>
+  <div><label>Name as you need on the certificate${isNew?'':' (cannot be changed)'}</label><input id="pf_name" value="${esc(p.name||'')}" ${isNew?'':'disabled'}></div>
+  <div><label>Gender${isNew?'':' (cannot be changed)'}</label><select id="pf_gender" ${isNew?'':'disabled'}><option value="">Select…</option>${o(L.genders,p.gender)}</select></div>
+  <div><label>Date of birth${isNew?'':' (cannot be changed)'}</label><input id="pf_dob" type="date" max="${S.today}" value="${esc(p.dob||'')}" ${isNew?'':'disabled'}></div>
+  ${isNew?`<div class="full mu">Your name, gender and date of birth cannot be changed after sign-up, so please check them carefully.</div>`:''}
   <div class="full"><label>Address in Singapore (include the 6-digit postal code)</label><textarea id="pf_addr" rows="2">${esc(p.address||'')}</textarea></div>
   <div><label>Organisation type</label><select id="pf_type"><option value="">Select…</option>${o(L.orgTypes,p.orgType)}</select></div>
-  <div><label>Organisation name (optional for Individuals)</label><input id="pf_org" value="${esc(p.orgName||'')}"></div>
+  <div><label>Organisation name (optional for Individuals and Groups)</label><input id="pf_org" value="${esc(p.orgName||'')}"></div>
   ${isNew?`<div class="full"><label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--tx)"><input type="checkbox" id="pf_consent" style="width:auto;margin-top:4px"> I consent to Big At Heart collecting, using and storing my personal details to manage my volunteering, issue certificates and contact me, in line with Singapore\u2019s PDPA.</label></div>`:''}
   <div class="full"><button class="p" data-a="psave" data-n="${isNew?1:0}">${isNew?'Complete sign-up':'Save changes'}</button></div></div>`;
 }
@@ -140,7 +141,8 @@ async function makeCert(d){
   lines(d.task,.528,.583,14,.68*W,2);
   lines(d.when,.528,.651,14,.68*W,1);
   put('Signed off by Big At Heart',.5,.885,16,{b:1,c:BROWN});
-  put('System generated certificate. Does not need a signature.',.5,.955,9,{i:1,c:'#555'});
+  put('System generated certificate. Does not need a signature.',.5,.934,9,{i:1,c:'#555'});
+  {const t='www.bigatheart.org  |  team@bigatheart.org  |  Facebook: TheBigAtHeart  |  Instagram: TheBigAtHeart';put(t,.5,.962,fit(t,.64*W,9,{}),{c:'#444'})}
   return c;
 }
 function dlBlob(b,name){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove()}
@@ -182,7 +184,7 @@ async function onClick(e){
   else if(a==='cert')load('cert',{id:v});
   else if(a==='issueAll')load('certAll',{id:v});
   else if(a==='certOne'){const s=S.mine.find(x=>x.id===v),o=oppOf(s.oppId);b.disabled=true;
-    await savePdf({name:myName(),role:roleOf(s).name,task:o.title,when:fd(o.date)+' | '+t12(o.start)+' \u2013 '+t12(o.end)+' | '+hh(ah(s))},certName()+'.pdf',b.dataset.f);b.disabled=false}
+    await savePdf({name:myName(),role:roleOf(s).name,task:o.title,when:fd(o.date)+' | '+hh(ah(s))},certName()+'.pdf',b.dataset.f);b.disabled=false}
   else if(a==='certAll'){const at=S.mine.filter(s=>s.attended==='yes'&&oppOf(s.oppId)),ds=at.map(s=>oppOf(s.oppId).date).sort();b.disabled=true;
     await savePdf({name:myName(),role:[...new Set(at.map(s=>roleOf(s).name))].join(', '),task:at.length+' volunteering '+(at.length===1?'activity':'activities'),when:(ds[0]===ds[ds.length-1]?fd(ds[0]):fd(ds[0])+' to '+fd(ds[ds.length-1]))+' | '+hh(hrs(S.mine))},certName()+'.pdf',b.dataset.f);b.disabled=false}
 }
