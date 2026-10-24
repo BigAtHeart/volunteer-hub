@@ -159,7 +159,7 @@ function vAdmins(){
   <div class="f"><div><label>By email address</label><input id="ad_email" type="email" placeholder="name@example.com"></div><div style="align-self:end"><button class="p" data-a="adAddEmail">Add admin</button></div></div>
   <div class="f" style="margin-top:10px"><div><label>Or choose an existing volunteer</label><select id="ad_user"><option value="">Select a volunteer…</option>${A.users.map(u=>`<option value="${esc(u.email)}">${esc(u.name)} (${esc(u.email)})</option>`).join('')}</select></div><div style="align-self:end"><button data-a="adAddUser">Make admin</button></div></div>
   <p class="mu">New admins get an email and see the admin tabs the next time they open the app.</p></div>
-  <div class="c"><h2>Current admins</h2>${A.list.map(a=>`<div class="row"><div><b>${esc(a.name||a.email)}</b> <span class="mu">${esc(a.email)}</span>${a.owner?' <span class="tag">Owner</span>':''}<div class="mu">${a.owner?'Set in the script; cannot be removed here':'Added by '+esc(a.addedBy)+' · '+esc(a.addedAt)}</div></div>${a.owner||a.email===S.email?'':`<button class="d" data-a="adRemove" data-v="${esc(a.email)}">Remove</button>`}</div>`).join('')}</div>`;
+  <div class="c"><h2>Current admins</h2>${A.list.map(a=>`<div class="row"><div><b>${esc(a.name||a.email)}</b> <span class="mu">${esc(a.email)}</span>${a.owner?' <span class="tag">Super admin</span>':''}<div class="mu">${a.owner?'Super admin: cannot be removed':'Added by '+esc(a.addedBy)+' · '+esc(a.addedAt)}</div></div>${a.owner||a.email===S.email?'':`<button class="d" data-a="adRemove" data-v="${esc(a.email)}">Remove</button>`}</div>`).join('')}</div>`;
 }
 function oppCard(o,am){
   const s=S.mine.find(x=>x.oppId===o.id),reg=s&&s.status==='registered',past=isPast(o),rs=roles(o);let b='';
