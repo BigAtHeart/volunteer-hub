@@ -25,7 +25,7 @@ label{font-size:12px;color:var(--mu);display:block}.full{grid-column:1/-1}.bar{h
 table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:6px;border-top:1px solid var(--bd)}.ov{overflow-x:auto}
 </style></head><body><div class="w" id="app">Loading…</div>
 <script>
-const UIV=7;
+const UIV=8;
 let tabSet=0;
 let B={org:'Big At Heart',logo:''},S=null,tab='opps',tok='',em='',step=0,err='';
 try{tok=localStorage.getItem('vh_t')||''}catch(e){}
@@ -58,10 +58,10 @@ function render(){
   <div style="color:var(--rd)">${esc(err)}</div></div>`;return}
   if(!S.profile){$('#app').innerHTML=onboard();return}
   if(S.needs&&!tabSet){tab='profile';tabSet=1}
-  const T=[['opps','Opportunities'],['my','My activity'],['profile','My profile']].concat(S.admin?[['manage','Manage & attendance'],['dash','Dashboard']]:[]);
+  const T=[['opps','Opportunities'],['my','My activity'],['profile','My profile']].concat(S.admin?[['manage','Manage & attendance'],['dash','Dashboard'],['admins','Admins']]:[]);
   if(!T.some(t=>t[0]===tab))tab='opps';
   $('#app').innerHTML=`<header><div><h1>${logo(32)} Big At Heart Volunteer Hub</h1><div class="mu">${esc(S.email)} · ${S.admin?'Admin':'Volunteer'}</div></div><button data-a="out">Sign out</button></header>
-  ${S.needs?`<div class="al">⚠️ Please complete the missing details in your profile (your WhatsApp number, emergency contact, and parent details if you are under 21) before signing up for opportunities.</div>`:''}<div class="tabs">${T.map(t=>`<button class="${tab===t[0]?'on':''}" data-a="tab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>${{opps:vOpps,my:vMy,profile:vProfile,manage:vManage,dash:vDash}[tab]()}<div class="mu" style="margin:18px 0 6px;text-align:center">Big At Heart Volunteer Hub · page v${UIV} · server v${S.ver||'old'}</div>`;
+  ${S.needs?`<div class="al">⚠️ Please complete the missing details in your profile (your WhatsApp number, emergency contact, and parent details if you are under 21) before signing up for opportunities.</div>`:''}<div class="tabs">${T.map(t=>`<button class="${tab===t[0]?'on':''}" data-a="tab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>${{opps:vOpps,my:vMy,profile:vProfile,manage:vManage,dash:vDash,admins:vAdmins}[tab]()}<div class="mu" style="margin:18px 0 6px;text-align:center">Big At Heart Volunteer Hub · page v${UIV} · server v${S.ver||'old'}</div>`;
 }
 const ageOn=(d,t)=>{let a=+t.slice(0,4)-+d.slice(0,4);if(t.slice(5)<d.slice(5))a--;return a};
 const isMinorDob=d=>/^\d{4}-\d{2}-\d{2}$/.test(d||'')&&ageOn(d,S.today)<21;
@@ -152,6 +152,14 @@ async function cPdf(o){
     if(pi)pdf.addPage([297,210],'landscape');pdf.addImage(c.toDataURL('image/jpeg',.9),'JPEG',0,0,297,210);
   });
   pdf.save(cFile(o,'pdf'));
+}
+function vAdmins(){
+  const A=S.admins;
+  return `<div class="c"><h2>Add an admin</h2>
+  <div class="f"><div><label>By email address</label><input id="ad_email" type="email" placeholder="name@example.com"></div><div style="align-self:end"><button class="p" data-a="adAddEmail">Add admin</button></div></div>
+  <div class="f" style="margin-top:10px"><div><label>Or choose an existing volunteer</label><select id="ad_user"><option value="">Select a volunteer…</option>${A.users.map(u=>`<option value="${esc(u.email)}">${esc(u.name)} (${esc(u.email)})</option>`).join('')}</select></div><div style="align-self:end"><button data-a="adAddUser">Make admin</button></div></div>
+  <p class="mu">New admins get an email and see the admin tabs the next time they open the app.</p></div>
+  <div class="c"><h2>Current admins</h2>${A.list.map(a=>`<div class="row"><div><b>${esc(a.name||a.email)}</b> <span class="mu">${esc(a.email)}</span>${a.owner?' <span class="tag">Owner</span>':''}<div class="mu">${a.owner?'Set in the script; cannot be removed here':'Added by '+esc(a.addedBy)+' · '+esc(a.addedAt)}</div></div>${a.owner||a.email===S.email?'':`<button class="d" data-a="adRemove" data-v="${esc(a.email)}">Remove</button>`}</div>`).join('')}</div>`;
 }
 function oppCard(o,am){
   const s=S.mine.find(x=>x.oppId===o.id),reg=s&&s.status==='registered',past=isPast(o),rs=roles(o);let b='';
@@ -256,6 +264,11 @@ async function onClick(e){
     if(!isNew&&S.profile&&S.profile.version!==before)alert('Profile updated.')}
   else if(a==='clx')cXlsx(oppOf(v));
   else if(a==='clp'){b.disabled=true;await cPdf(oppOf(v));b.disabled=false}
+  else if(a==='adAddEmail'||a==='adAddUser'){const e=(a==='adAddEmail'?$('#ad_email').value:$('#ad_user').value).trim().toLowerCase();
+    if(!e){alert(a==='adAddEmail'?'Please enter an email address.':'Please choose a volunteer.');return}
+    if(!confirm('Make '+e+' an admin? They will be able to see and manage all volunteer data.'))return;
+    await load('adminAdd',{email:e});if(S.admins&&S.admins.list.some(x=>x.email===e))alert(e+' is now an admin.')}
+  else if(a==='adRemove'){if(confirm('Remove admin access for '+v+'?'))await load('adminRemove',{email:v})}
   else if(a==='del'){if(confirm('Delete this opportunity and its sign-ups?'))load('delete',{id:v})}
   else if(a==='att'){const pr=b.dataset.p==='1',hv=pr?document.getElementById('h_'+v).value:'';
     if(pr&&!(+hv>0&&+hv<=24)){alert('Enter the hours attended (more than 0, up to 24).');return}load('mark',{id:v,present:pr,hours:hv})}
